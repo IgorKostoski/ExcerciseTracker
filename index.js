@@ -23,9 +23,9 @@ const exerciseSchema = mongoose.Schema({
   username: String,
   description: String,
   duration: Number,
-  date: String,
+  date: Date,
   userID: String
-});
+}, {versionKey: false});
 
 const Exercise = mongoose.model("Excercise", exerciseSchema )
 
@@ -60,32 +60,57 @@ app.post("/api/users", async (req,res) => {
   res.json(user);
 });
 
-
-
-
-
-
-app.get("/api/users/:_id/logs",  async (req, res) =>{
+app.get("/api/users/:_id/logs", async (req,res) => {
+  let { from , to , limit} = req.query;
   const userId = req.params._id;
   const foundUser = await User.findById(userId);
   if(!foundUser) {
-    res.json({message: "No user exists"});
+    res.json({ message: "No user exists"});
+  }
+  
+  let filter = { userId };
+  let dateFilter = {};
+  if (from) {
+    dateFilter['$gte'] = new Date(from);
+
+  }
+  if (to) {
+    dateFilter['$lte'] = new Date(to);
+  }
+  if (from || to ) {
+    filter.dateFilter = dateFilter
   }
 
-  const exercises = await Exercise.find({ userId});
-  
+
+  if(!limit) {
+    limit = 100;
+  }
+
+ let exercises = await Exercise.find(filter).limit(limit);
+ exercises =  exercises.map((exercise) =>{
+    return{
+      description: exercise.description,
+      duration: exercise.duration,
+      date: exercise.date.toDateString(),
+
+    };
+  });
+
   res.json({
     username: foundUser.username,
     count: exercises.length,
     _id: userId,
     log: exercises,
   });
+
 });
+
+
 
 
 app.post("/api/users/:_id/exercises", async (req,res) => {
   
-  let { _id, description, duration, date} = req.body;
+  let {  description, duration, date} = req.body;
   const userId = req.body[":_id"];
 
   const foundUser = await User.findById(userId);
