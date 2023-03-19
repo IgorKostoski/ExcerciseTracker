@@ -60,10 +60,27 @@ app.post("/api/users", async (req,res) => {
   res.json(user);
 });
 
+
+
+
+
+
 app.get("/api/users/:_id/logs",  async (req, res) =>{
   const userId = req.params._id;
-  res.send(userId);
-})
+  const foundUser = await User.findById(userId);
+  if(!foundUser) {
+    res.json({message: "No user exists"});
+  }
+
+  const exercises = await Exercise.find({ userId});
+  
+  res.json({
+    username: foundUser.username,
+    count: exercises.length,
+    _id: userId,
+    log: exercises,
+  });
+});
 
 
 app.post("/api/users/:_id/exercises", async (req,res) => {
